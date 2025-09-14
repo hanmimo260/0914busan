@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>축제 부스 신청</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #FCE4EC; /* 연분홍 배경색 */
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #f472b6;
+            box-shadow: 0 0 0 3px rgba(244, 114, 182, 0.5);
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            color: white;
+            transition: all 0.2s ease-in-out;
+        }
+        .submit-btn:hover {
+            opacity: 0.85;
+        }
+        .booth-card {
+            background-color: #e0e7ff;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            border: 1px solid #c7d2fe;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        h1 {
+            color: #E91E63; /* 진분홍 타이틀 색상 */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-6">
+            축제 부스 신청
+        </h1>
+        <p class="text-center text-sm text-gray-500 mb-8">
+            선생님들이 운영하실 부스 정보와 필요한 물품을 입력해주세요.
+        </p>
+        
+        <!-- 현재 사용자 ID 표시 -->
+        <div class="mb-6 bg-gray-100 p-4 rounded-xl text-sm break-words">
+            <span class="font-bold">현재 사용자 ID:</span> <span id="userIdDisplay">로딩 중...</span>
+        </div>
+        
+        <!-- Gemini API 기능: 부스 아이디어 생성 -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                ✨ 아이디어 얻기
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                버튼을 누르면 Gemini AI가 축제 부스 아이디어를 생성하여 자동으로 입력해줍니다.
+            </p>
+            <button id="generateIdeaBtn" class="submit-btn bg-pink-500 flex items-center justify-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9.043 18l-1.63-1.63M12 21l-3.375-3.375M19.986 4.647L21 9l-1.014 4.353m-10.45 3.54L9 14.54l-1.63-1.63M14.54 9.043L18 9l-3.46-3.46m-6.42 13.56L9 19.986l-4.353-1.014m13.56-6.42l-1.63 1.63M5 14.54l1.63-1.63M12 3v18M3 12h18" />
+                </svg>
+                AI가 부스 아이디어 생성하기
+            </button>
+            <div id="loadingMessage" class="hidden text-center text-sm text-gray-500 mt-2">
+                아이디어를 생성 중입니다...
+            </div>
+        </div>
+        
+        <!-- 쿠팡 검색 기능 -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                🛍️ 물품 가격 검색
+            </h2>
+            <p class="text-sm text-gray-500 mb-4">
+                필요한 물품명을 입력하고 쿠팡에서 가격을 검색해 보세요.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-2">
+                <input type="text" id="coupangSearchInput" class="form-input flex-grow" placeholder="검색할 물품명을 입력하세요 (예: 풍선)">
+                <button id="coupangSearchBtn" class="submit-btn bg-pink-500 sm:w-auto flex-shrink-0">
+                    쿠팡에서 검색하기
+                </button>
+            </div>
+        </div>
+
+        <!-- 신청 폼 -->
+        <form id="boothForm" class="flex flex-col gap-4">
+            <div>
+                <label for="boothName" class="block text-gray-700 font-semibold mb-2">부스명</label>
+                <input type="text" id="boothName" name="boothName" class="form-input" placeholder="예: VR 체험, 과학 마술쇼" required>
+            </div>
+            <div>
+                <label for="teacherName" class="block text-gray-700 font-semibold mb-2">선생님 이름</label>
+                <input type="text" id="teacherName" name="teacherName" class="form-input" placeholder="예: 김민지 선생님" required>
+            </div>
+            <div>
+                <label for="boothDescription" class="block text-gray-700 font-semibold mb-2">부스 설명</label>
+                <textarea id="boothDescription" name="boothDescription" rows="4" class="form-input" placeholder="예: VR 기기를 활용하여 우주를 탐험하는 체험입니다. 참가 학생은 직접 가상의 우주선을 조종해볼 수 있습니다." required></textarea>
+            </div>
+            
+            <!-- 물품 및 가격 입력 섹션 -->
+            <div id="itemsSection">
+                <h3 class="text-lg font-semibold text-gray-700 mb-2">필요 물품 및 가격</h3>
+                <div id="itemsList" class="mb-2">
+                    <!-- 물품 목록이 여기에 추가됩니다 -->
+                </div>
+                <div class="flex gap-2 mb-2">
+                    <input type="text" id="itemNameInput" class="form-input flex-grow" placeholder="물품명 (예: 풍선)">
+                    <input type="number" id="itemPriceInput" class="form-input w-28" placeholder="가격 (원)">
+                    <button type="button" id="addItemBtn" class="submit-btn bg-pink-500 w-auto flex-shrink-0">
+                        추가
+                    </button>
+                </div>
+            </div>
+
+            <button type="submit" class="submit-btn bg-pink-500">
+                정보 제출하기
+            </button>
+        </form>
+
+        <hr class="my-8 border-gray-300">
+
+        <!-- 부스 목록 표시 영역 -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            제출된 부스 목록
+        </h2>
+        <div id="boothList" class="flex flex-col gap-4">
+            <!-- 부스 목록이 여기에 동적으로 추가됩니다 -->
+            <p class="text-center text-gray-500">
+                아직 제출된 부스가 없습니다.
+            </p>
+        </div>
+
+        <hr class="my-8 border-gray-300">
+
+        <!-- 선생님별 총 지출 금액 요약 -->
+        <div class="bg-gray-100 p-4 rounded-xl shadow-inner">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                선생님별 총 지출 금액 요약
+            </h2>
+            <div id="teacherTotals" class="space-y-2">
+                <!-- 선생님별 총액이 여기에 동적으로 추가됩니다 -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Firebase SDK 및 Gemini API 스크립트 -->
+    <script type="module">
+        // Firebase SDK 모듈을 가져옵니다.
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, doc, deleteDoc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Firestore 및 인증 객체 선언
+        let db;
+        let auth;
+        let userId;
+
+        // Firestore 전역 변수 설정 (캔버스 환경에서 제공)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        
+        // HTML 요소 참조
+        const boothForm = document.getElementById('boothForm');
+        const boothNameInput = document.getElementById('boothName');
+        const teacherNameInput = document.getElementById('teacherName');
+        const boothDescriptionTextarea = document.getElementById('boothDescription');
+        const itemsListElement = document.getElementById('itemsList');
+        const itemNameInput = document.getElementById('itemNameInput');
+        const itemPriceInput = document.getElementById('itemPriceInput');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const boothList = document.getElementById('boothList');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const generateIdeaBtn = document.getElementById('generateIdeaBtn');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const coupangSearchInput = document.getElementById('coupangSearchInput');
+        const coupangSearchBtn = document.getElementById('coupangSearchBtn');
+        const teacherTotalsElement = document.getElementById('teacherTotals');
+        const apiKey = ""; // API key for Gemini API
+
+        // 임시 물품 목록 배열
+        let currentItems = [];
+
+        // Firebase 초기화 함수
+        const initializeFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // 사용자 인증
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        // 사용자 ID가 확인된 후 실시간 리스너 시작
+                        startRealtimeListener();
+                    } else {
+                        userId = 'guest'; // 임시 사용자 ID
+                        userIdDisplay.textContent = '익명 사용자';
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase 초기화 중 오류 발생:", error);
+                userIdDisplay.textContent = `오류: ${error.message}`;
+            }
+        };
+
+        // 데이터베이스에 부스 정보 추가
+        const addBooth = async (boothData) => {
+            try {
+                const boothsCollectionRef = collection(db, `artifacts/${appId}/public/data/booths`);
+                await addDoc(boothsCollectionRef, boothData);
+            } catch (error) {
+                console.error("부스 정보 추가 중 오류 발생:", error);
+            }
+        };
+        
+        // 데이터베이스에서 부스 정보 삭제
+        const deleteBooth = async (docId) => {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/booths`, docId);
+                await deleteDoc(docRef);
+            } catch (error) {
+                console.error("부스 정보 삭제 중 오류 발생:", error);
+            }
+        };
+
+        // 데이터베이스에서 부스 정보 업데이트
+        const updateBooth = async (docId, newData) => {
+            try {
+                const docRef = doc(db, `artifacts/${appId}/public/data/booths`, docId);
+                await updateDoc(docRef, newData);
+            } catch (error) {
+                console.error("부스 정보 업데이트 중 오류 발생:", error);
+            }
+        };
+
+        // 실시간 리스너 시작
+        const startRealtimeListener = () => {
+            const boothsCollectionRef = collection(db, `artifacts/${appId}/public/data/booths`);
+            const q = query(boothsCollectionRef);
+
+            // onSnapshot을 사용하여 실시간으로 데이터 변경을 감지하고 UI 업데이트
+            onSnapshot(q, (snapshot) => {
+                boothList.innerHTML = '';
+                const teacherTotals = {};
+                
+                if (snapshot.empty) {
+                    boothList.innerHTML = `
+                        <p class="text-center text-gray-500 p-4">
+                            아직 제출된 부스가 없습니다.
+                        </p>
+                    `;
+                    teacherTotalsElement.innerHTML = `
+                        <p class="text-center text-gray-500">
+                            요약할 데이터가 없습니다.
+                        </p>
+                    `;
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const docId = doc.id;
+                    
+                    // 각 부스의 물품 총 가격 계산
+                    const totalItemsPrice = (Array.isArray(data.items) ? data.items : []).reduce((sum, item) => sum + (item.price || 0), 0);
+                    
+                    // 선생님별 총 지출 금액 누적
+                    if (data.authorId) {
+                        if (!teacherTotals[data.authorId]) {
+                            teacherTotals[data.authorId] = {
+                                total: 0,
+                                teacherName: data.teacherName || '이름 없음'
+                            };
+                        }
+                        teacherTotals[data.authorId].total += totalItemsPrice;
+                    }
+
+                    const boothItem = document.createElement('div');
+                    boothItem.className = 'booth-card';
+                    boothItem.innerHTML = `
+                        <div class="flex-grow">
+                            <h3 class="font-bold text-lg text-gray-900 mb-1">${data.boothName}</h3>
+                            <p class="text-gray-600 font-semibold mb-1">담당: ${data.teacherName}</p>
+                            <p class="text-sm text-gray-500 mb-2">${data.boothDescription}</p>
+                            <ul class="list-disc list-inside text-gray-700 space-y-1">
+                                ${(Array.isArray(data.items) ? data.items : []).map(item => `<li>${item.name} (${item.price ? item.price.toLocaleString() + '원' : '가격 미정'})</li>`).join('')}
+                            </ul>
+                            <p class="mt-2 font-bold text-gray-800">총 물품 가격: ${totalItemsPrice.toLocaleString()}원</p>
+                            <div class="mt-2 text-xs text-gray-400 break-words">제출자 ID: ${data.authorId}</div>
+                        </div>
+                        <div class="flex gap-2 mt-2">
+                            <button class="edit-btn px-3 py-1 bg-pink-400 text-white rounded-md text-sm hover:bg-pink-500 transition-colors" data-id="${docId}">수정</button>
+                            <button class="delete-btn px-3 py-1 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors" data-id="${docId}">삭제</button>
+                        </div>
+                    `;
+                    boothList.appendChild(boothItem);
+                });
+                
+                // 선생님별 총 지출 금액 요약 업데이트
+                teacherTotalsElement.innerHTML = '';
+                if (Object.keys(teacherTotals).length > 0) {
+                    for (const id in teacherTotals) {
+                        const total = teacherTotals[id].total;
+                        const name = teacherTotals[id].teacherName;
+                        const totalItem = document.createElement('div');
+                        totalItem.className = 'flex justify-between items-center text-gray-700';
+                        totalItem.innerHTML = `
+                            <span>${name} (${id.substring(0, 6)}...):</span>
+                            <span class="font-bold text-lg">${total.toLocaleString()}원</span>
+                        `;
+                        teacherTotalsElement.appendChild(totalItem);
+                    }
+                } else {
+                    teacherTotalsElement.innerHTML = `
+                        <p class="text-center text-gray-500">
+                            요약할 데이터가 없습니다.
+                        </p>
+                    `;
+                }
+            });
+        };
+        
+        // 물품 추가 버튼 핸들러
+        addItemBtn.addEventListener('click', () => {
+            const itemName = itemNameInput.value.trim();
+            const itemPrice = parseInt(itemPriceInput.value, 10);
+
+            if (itemName === '' || isNaN(itemPrice) || itemPrice < 0) {
+                // 경고창 대신 모달 사용
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">알림</h3>
+                        <p class="text-gray-600">유효한 물품명과 가격을 입력해주세요.</p>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none close-modal">확인</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                return;
+            }
+
+            currentItems.push({ name: itemName, price: itemPrice });
+            renderItemsList();
+            itemNameInput.value = '';
+            itemPriceInput.value = '';
+            itemNameInput.focus();
+        });
+
+        // 현재 물품 목록을 UI에 렌더링
+        const renderItemsList = () => {
+            itemsListElement.innerHTML = '';
+            currentItems.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'flex items-center justify-between bg-gray-50 p-2 rounded-lg text-sm mb-1';
+                itemDiv.innerHTML = `
+                    <span>${item.name} (${item.price.toLocaleString()}원)</span>
+                    <button type="button" class="remove-item-btn text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                `;
+                itemsListElement.appendChild(itemDiv);
+            });
+        };
+
+        // 물품 삭제 버튼 핸들러
+        itemsListElement.addEventListener('click', (e) => {
+            if (e.target.closest('.remove-item-btn')) {
+                const index = e.target.closest('.remove-item-btn').dataset.index;
+                currentItems.splice(index, 1);
+                renderItemsList();
+            }
+        });
+
+        // 폼 제출 이벤트 핸들러
+        boothForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const boothName = boothNameInput.value;
+            const teacherName = teacherNameInput.value;
+            const boothDescription = boothDescriptionTextarea.value;
+            
+            if (boothName.trim() === '' || teacherName.trim() === '' || boothDescription.trim() === '' || currentItems.length === 0) {
+                // 경고창 대신 모달 사용
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">알림</h3>
+                        <p class="text-gray-600">모든 필수 항목을 입력하고 물품을 하나 이상 추가해주세요.</p>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 focus:outline-none close-modal">확인</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+                return;
+            }
+
+            const boothData = {
+                boothName: boothName,
+                teacherName: teacherName,
+                boothDescription: boothDescription,
+                items: currentItems,
+                authorId: userId, // 현재 사용자 ID를 데이터에 추가
+                createdAt: new Date()
+            };
+
+            await addBooth(boothData);
+            boothForm.reset();
+            currentItems = []; // 물품 목록 초기화
+            renderItemsList();
+        });
+        
+        // 삭제/수정 버튼 이벤트 리스너 (이벤트 위임)
+        boothList.addEventListener('click', async (e) => {
+            const target = e.target;
+            const docId = target.dataset.id;
+            
+            if (target.classList.contains('delete-btn')) {
+                // 삭제 확인 모달
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">삭제 확인</h3>
+                        <p class="text-gray-600">이 부스 정보를 정말 삭제하시겠습니까?</p>
+                        <div class="flex justify-end mt-4 gap-2">
+                            <button type="button" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none cancel-modal">취소</button>
+                            <button type="button" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none confirm-delete">삭제</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                modal.querySelector('.confirm-delete').addEventListener('click', async () => {
+                    await deleteBooth(docId);
+                    document.body.removeChild(modal);
+                });
+                modal.querySelector('.cancel-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            } else if (target.classList.contains('edit-btn')) {
+                // 수정 기능
+                const docRef = doc(db, `artifacts/${appId}/public/data/booths`, docId);
+                const docSnap = await getDoc(docRef);
+                const data = docSnap.data();
+                
+                let editingItems = data.items || [];
+                
+                const renderEditItems = () => {
+                    let html = '';
+                    editingItems.forEach((item, index) => {
+                        html += `
+                            <div class="flex items-center justify-between bg-gray-50 p-2 rounded-lg text-sm mb-1">
+                                <span>${item.name} (${item.price.toLocaleString()}원)</span>
+                                <button type="button" class="remove-edit-item-btn text-red-500 hover:text-red-700 transition-colors" data-index="${index}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    return html;
+                };
+
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-md w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">부스 정보 수정</h3>
+                        <form id="editForm" class="flex flex-col gap-4">
+                            <div>
+                                <label for="editBoothName" class="block text-gray-700 font-semibold mb-2">부스명</label>
+                                <input type="text" id="editBoothName" name="editBoothName" class="form-input" value="${data.boothName}" required>
+                            </div>
+                            <div>
+                                <label for="editTeacherName" class="block text-gray-700 font-semibold mb-2">선생님 이름</label>
+                                <input type="text" id="editTeacherName" name="editTeacherName" class="form-input" value="${data.teacherName}" required>
+                            </div>
+                            <div>
+                                <label for="editBoothDescription" class="block text-gray-700 font-semibold mb-2">부스 설명</label>
+                                <textarea id="editBoothDescription" name="editBoothDescription" rows="4" class="form-input" required>${data.boothDescription}</textarea>
+                            </div>
+                            
+                            <div id="editItemsSection">
+                                <h3 class="text-lg font-semibold text-gray-700 mb-2">필요 물품 및 가격</h3>
+                                <div id="editItemsList" class="mb-2">
+                                    ${renderEditItems()}
+                                </div>
+                                <div class="flex gap-2 mb-2">
+                                    <input type="text" id="editItemNameInput" class="form-input flex-grow" placeholder="물품명 (예: 풍선)">
+                                    <input type="number" id="editItemPriceInput" class="form-input w-28" placeholder="가격 (원)">
+                                    <button type="button" id="addEditItemBtn" class="submit-btn bg-pink-500 hover:bg-pink-600 w-auto flex-shrink-0">
+                                        추가
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-end mt-4 gap-2">
+                                <button type="button" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 focus:outline-none cancel-edit">취소</button>
+                                <button type="submit" class="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 focus:outline-none">수정 완료</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                const editForm = modal.querySelector('#editForm');
+                const addEditItemBtn = modal.querySelector('#addEditItemBtn');
+                const editItemNameInput = modal.querySelector('#editItemNameInput');
+                const editItemPriceInput = modal.querySelector('#editItemPriceInput');
+                const editItemsList = modal.querySelector('#editItemsList');
+
+                addEditItemBtn.addEventListener('click', () => {
+                    const itemName = editItemNameInput.value.trim();
+                    const itemPrice = parseInt(editItemPriceInput.value, 10);
+                    if (itemName !== '' && !isNaN(itemPrice) && itemPrice >= 0) {
+                        editingItems.push({ name: itemName, price: itemPrice });
+                        editItemsList.innerHTML = renderEditItems();
+                        editItemNameInput.value = '';
+                        editItemPriceInput.value = '';
+                    }
+                });
+
+                editItemsList.addEventListener('click', (e) => {
+                    if (e.target.closest('.remove-edit-item-btn')) {
+                        const index = e.target.closest('.remove-edit-item-btn').dataset.index;
+                        editingItems.splice(index, 1);
+                        editItemsList.innerHTML = renderEditItems();
+                    }
+                });
+                
+                editForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const newBoothName = modal.querySelector('#editBoothName').value;
+                    const newTeacherName = modal.querySelector('#editTeacherName').value;
+                    const newBoothDescription = modal.querySelector('#editBoothDescription').value;
+                    
+                    await updateBooth(docId, { 
+                        boothName: newBoothName,
+                        teacherName: newTeacherName,
+                        boothDescription: newBoothDescription,
+                        items: editingItems
+                    });
+                    document.body.removeChild(modal);
+                });
+                
+                modal.querySelector('.cancel-edit').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            }
+        });
+        
+        // Gemini API 호출 함수
+        const generateGeminiIdea = async () => {
+            generateIdeaBtn.disabled = true;
+            loadingMessage.classList.remove('hidden');
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const systemPrompt = `You are a creative festival planner. Your task is to generate a single festival booth idea with a catchy name, a brief description, a generic teacher name, and a list of necessary items. Each item must have a name and a price. The final output must be a JSON object with the following structure:
+            {
+                "boothName": "string",
+                "teacherName": "string",
+                "boothDescription": "string",
+                "items": [
+                    {"name": "string", "price": "number"}
+                ]
+            }.
+            Ensure the response is in Korean and the prices are reasonable estimates for festival supplies.`;
+            
+            const userQuery = "12월 축제에 적합한 부스 아이디어를 하나만 제안하고, 필요한 물품과 각 물품의 가격을 포함해서 작성해줘. 부스에 대한 짧은 설명과 담당할 선생님 이름도 함께 포함해줘.";
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            "boothName": { "type": "STRING" },
+                            "teacherName": { "type": "STRING" },
+                            "boothDescription": { "type": "STRING" },
+                            "items": { 
+                                "type": "ARRAY",
+                                "items": {
+                                    "type": "OBJECT",
+                                    "properties": {
+                                        "name": { "type": "STRING" },
+                                        "price": { "type": "NUMBER" }
+                                    },
+                                    "propertyOrdering": ["name", "price"]
+                                }
+                            }
+                        },
+                        "propertyOrdering": ["boothName", "teacherName", "boothDescription", "items"]
+                    }
+                }
+            };
+            
+            try {
+                let response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                const content = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (content) {
+                    const parsedData = JSON.parse(content);
+                    boothNameInput.value = parsedData.boothName || '';
+                    teacherNameInput.value = parsedData.teacherName || '';
+                    boothDescriptionTextarea.value = parsedData.boothDescription || '';
+                    currentItems = parsedData.items || [];
+                    renderItemsList();
+                } else {
+                    throw new Error("API 응답에 내용이 없습니다.");
+                }
+            } catch (error) {
+                console.error("Gemini API 호출 중 오류 발생:", error);
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">오류</h3>
+                        <p class="text-gray-600">아이디어 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.</p>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 focus:outline-none close-modal">확인</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            } finally {
+                generateIdeaBtn.disabled = false;
+                loadingMessage.classList.add('hidden');
+            }
+        };
+
+        // 쿠팡 검색 기능 이벤트 핸들러
+        coupangSearchBtn.addEventListener('click', () => {
+            const searchTerm = coupangSearchInput.value;
+            if (searchTerm.trim() !== '') {
+                const encodedTerm = encodeURIComponent(searchTerm);
+                const coupangUrl = `https://www.coupang.com/np/search?q=${encodedTerm}`;
+                window.open(coupangUrl, '_blank');
+            } else {
+                const modal = document.createElement('div');
+                modal.className = "fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50";
+                modal.innerHTML = `
+                    <div class="p-6 bg-white rounded-lg shadow-lg max-w-sm w-full mx-4">
+                        <h3 class="text-xl font-bold mb-4 text-gray-800">알림</h3>
+                        <p class="text-gray-600">검색할 물품명을 입력해주세요.</p>
+                        <div class="flex justify-end mt-4">
+                            <button class="px-4 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 focus:outline-none close-modal">확인</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                modal.querySelector('.close-modal').addEventListener('click', () => {
+                    document.body.removeChild(modal);
+                });
+            }
+        });
+
+        // 이벤트 리스너 추가
+        generateIdeaBtn.addEventListener('click', generateGeminiIdea);
+        
+        // 웹앱 시작
+        initializeFirebase();
+    </script>
+</body>
+</html>
